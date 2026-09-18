@@ -1,4 +1,4 @@
-# DocConnect Agent Demo
+# GitHub Agentic Workflows Demo
 
 A small React app used to demo [GitHub Agentic Workflows](https://github.github.com/gh-aw/).
 Open a pull request, an AI agent reviews it against the team's front-end
