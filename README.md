@@ -51,6 +51,41 @@ graph in the Actions tab while it works — the six boxes are the security story
 
 Afterwards: `./demo/reset.sh`, and close the PR.
 
+## How it works
+
+GitHub Actions only ever runs `.yml` files, never `.md`. `gh aw compile` reads
+`ui-review.md` and generates `ui-review.lock.yml` — that generated file is what
+Actions actually executes. Editing the `.md` without recompiling changes
+nothing.
+
+```mermaid
+flowchart TD
+    subgraph B["Build-time (you, locally)"]
+        A["ui-review.md<br/>you hand-edit this"] --> C["gh aw compile"]
+        C --> D["ui-review.lock.yml<br/>committed — this is what Actions runs"]
+    end
+    subgraph R["Runtime (GitHub Actions)"]
+        E["PR opened / updated<br/>touches src/**/*.tsx or *.ts"] --> F["Actions runs ui-review.lock.yml<br/>6 jobs, posts a PR comment"]
+    end
+    D --> E
+```
+
+### Day-to-day developer flow
+
+```mermaid
+flowchart TD
+    A["Edit frontend code in src/"] --> B["Commit and push to a branch"]
+    B --> C["Open a PR, or push a new commit<br/>to an existing PR"]
+    C --> D{"Change touches<br/>src/**/*.tsx or *.ts?"}
+    D -- No --> Z["Workflow does not run"]
+    D -- Yes --> E["GitHub Actions runs the UI review workflow"]
+    E --> F["Claude posts one PR comment with findings"]
+    F --> G{"Findings to address?"}
+    G -- Yes --> H["Fix the code, push another commit"]
+    H --> C
+    G -- No --> I["Merge the PR"]
+```
+
 ## What the agent should find
 
 `demo/DocumentPanel.tsx` breaks six rules on purpose:
