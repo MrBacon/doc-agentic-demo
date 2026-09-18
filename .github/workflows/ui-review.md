@@ -2,6 +2,7 @@
 emoji: ⚛️
 name: DocConnect UI Review
 description: Reviews React changes against team front-end standards
+engine: claude
 on:
   pull_request:
     types: [opened, synchronize]
