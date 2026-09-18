@@ -124,3 +124,73 @@ gh aw compile
 
 Commit both the `.md` and the generated `.lock.yml` — the lock file is what
 Actions actually runs.
+
+## Where this goes next
+
+### Built here
+
+| Workflow | Trigger | Allowed to write |
+| --- | --- | --- |
+| UI review | PR opened or updated, touching `src/**/*.tsx` or `*.ts` | One PR comment |
+
+### Candidates
+
+**CI failure triage.** Triggers on a failed build. Reads the failing job's
+logs and the PR diff, and posts a comment saying whether this looks like a
+code problem or an infrastructure flake — a bad test assertion versus a
+runner timeout. Worth doing because "is this my fault" is the first question
+anyone asks when a build goes red, and it currently costs a human a few
+minutes of log-reading to answer. The honest trade-off: logs are long and
+noisy, and a confident "just a flake, retry" on an actual regression is worse
+than no comment at all.
+
+**Docs drift.** Triggers on push to main. Reads the architecture reference
+doc alongside the code paths it describes, and opens a PR updating the
+sections that no longer match. Worth doing because architecture docs go
+stale the moment code changes without the doc changing alongside it, and
+nobody remembers to update prose in the same commit as the diff it
+describes. The honest trade-off: it demos badly — whether it picked the
+right section and wrote something true only shows up over weeks of drift,
+not in a five-minute run.
+
+**Cross-repo contract drift.** Triggers on a schedule, since no single push
+event covers two repos. Reads the API's schema in one repo and the BFF or
+front-end types meant to mirror it in another, and opens an issue when they
+diverge. Worth doing because a backend contract change with no matching
+client-type update is exactly the kind of thing that surfaces as a runtime
+bug days later instead of a review comment now. The honest trade-off: the
+cross-repo checkout and auth plumbing is the real work here, not the prompt —
+budget for that, not for agent tuning.
+
+**Dependency and CVE digest.** Triggers weekly. Reads the dependency
+manifest and current advisories for what's installed, and opens one issue
+summarising what needs attention now versus what can wait. Worth doing
+because it turns a scattering of automated alerts into a single prioritised
+read. The honest trade-off: it is boring by design — there is nothing to
+show on screen except an issue with a sensible list in it, which is exactly
+what makes it easy to skip building.
+
+**Release notes.** Triggers on a version tag. Reads the PRs merged since the
+last tag, and drafts release notes as a PR or draft release. Worth doing
+because nobody enjoys writing release notes by hand and most of the raw
+material already exists in PR titles and descriptions. The honest
+trade-off: it reads great in a demo, but the output is only as good as the
+PR descriptions feeding it — vague PR titles in, generic notes out.
+
+**Onboarding Q&A.** Triggers when a new joiner opens an issue asking a
+question about the codebase. Reads the relevant files to answer it, and
+posts a comment with the answer and file references. Worth doing because it
+shortens the loop of asking in chat and waiting for whoever knows that part
+of the code. The honest trade-off: it's reliable for "where does X live"
+questions and risky for nuanced ones — a wrong, confident answer to an
+architectural question is worse than a shrug.
+
+Before adding more of these: every trigger is an agent run, and every agent
+run costs tokens and time, so schedule and volume matter as much as the
+idea. A workflow that opens a PR can itself trigger other `on: pull_request`
+workflows — including this one — so chain them deliberately or you get
+review workflows reviewing each other's output. And the thing that actually
+keeps any of this safe is not the prompt. It's the `safe-outputs` allowlist
+and the permissions block, the same as the UI review workflow above — assume
+the agent will eventually try something outside the brief, and let the
+allowlist be what stops it.
